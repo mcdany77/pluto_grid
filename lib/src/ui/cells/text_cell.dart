@@ -221,7 +221,36 @@ mixin TextCellState<T extends TextCell> on State<T> implements TextFieldProps {
     // 엔터키는 그리드 포커스 핸들러로 전파 한다.
     if (keyManager.isEnter) {
       _handleOnComplete();
+      
+      // Check if we're at the last row and exit editing mode
+      final position = widget.stateManager.currentCellPosition;
+      if (position != null && 
+          position.hasPosition && 
+          position.rowIdx == widget.stateManager.refRows.length - 1 &&
+          widget.stateManager.configuration.enterKeyAction.isEditingAndMoveDown &&
+          !HardwareKeyboard.instance.isShiftPressed) {
+        // At last row, exit editing mode
+        widget.stateManager.setEditing(false);
+        return KeyEventResult.handled;
+      }
+      
       return KeyEventResult.ignored;
+    }
+
+    // Tab-Taste behandeln
+    if (keyManager.isTab) {
+      _handleOnComplete();
+      
+      // Check if we're at the last column and exit editing mode  
+      final position = widget.stateManager.currentCellPosition;
+      if (position != null && 
+          position.hasPosition && 
+          position.columnIdx == widget.stateManager.refColumns.length - 1 &&
+          !HardwareKeyboard.instance.isShiftPressed) {
+        // At last column, exit editing mode
+        widget.stateManager.setEditing(false);
+        return KeyEventResult.handled;
+      }
     }
 
     // ESC 는 편집된 문자열을 원래 문자열로 돌이킨다.
