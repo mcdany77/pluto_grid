@@ -248,13 +248,18 @@ class PlutoGridActionDefaultTab extends PlutoGridShortcutAction {
       return;
     }
 
-    final saveIsEditing = stateManager.isEditing;
+    // Always exit editing mode when using Tab
+    final wasEditing = stateManager.isEditing;
+    if (wasEditing) {
+      stateManager.setEditing(false, notify: false);
+    }
 
     HardwareKeyboard.instance.isShiftPressed
         ? _moveCellPrevious(stateManager)
         : _moveCellNext(stateManager);
 
-    stateManager.setEditing(stateManager.autoEditing || saveIsEditing);
+    // Don't re-enter editing mode after Tab navigation
+    // User can simply start typing to edit the new cell
   }
 
   void _moveCellPrevious(PlutoGridStateManager stateManager) {
@@ -372,19 +377,22 @@ class PlutoGridActionDefaultEnterKey extends PlutoGridShortcutAction {
     } else {
       if (stateManager.isEditing == true ||
           stateManager.currentColumn?.enableEditingMode == false) {
-        final saveIsEditing = stateManager.isEditing;
+        // Always exit editing mode when using Enter to move
+        stateManager.setEditing(false, notify: false);
 
         _moveCell(keyEvent, stateManager);
 
-        stateManager.setEditing(saveIsEditing, notify: false);
+        // Don't re-enter editing mode after Enter navigation
+        // User can simply start typing to edit the new cell
       } else {
         stateManager.toggleEditing(notify: false);
       }
     }
 
-    if (stateManager.autoEditing) {
-      stateManager.setEditing(true, notify: false);
-    }
+    // Don't auto-enter editing mode
+    // if (stateManager.autoEditing) {
+    //   stateManager.setEditing(true, notify: false);
+    // }
 
     stateManager.notifyListeners();
   }
