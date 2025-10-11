@@ -56,7 +56,22 @@ mixin TextCellState<T extends TextCell> on State<T> implements TextFieldProps {
 
     widget.stateManager.setTextEditingController(_textController);
 
-    _textController.text = formattedValue;
+    // Check if text editing controller already has text set by key manager
+    // This prevents overwriting the first character typed
+    if (_textController.text.isEmpty) {
+      _textController.text = formattedValue;
+    } else {
+      // If text was set by key manager, position cursor at the end
+      // This must be done in a post frame callback to ensure it happens after
+      // any automatic text selection that TextField might apply
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_textController.text.isNotEmpty) {
+          _textController.selection = TextSelection.fromPosition(
+            TextPosition(offset: _textController.text.length),
+          );
+        }
+      });
+    }
 
     _initialCellValue = _textController.text;
 
@@ -206,7 +221,36 @@ mixin TextCellState<T extends TextCell> on State<T> implements TextFieldProps {
     // 엔터키는 그리드 포커스 핸들러로 전파 한다.
     if (keyManager.isEnter) {
       _handleOnComplete();
+      
+      // Check if we're at the last row and exit editing mode
+      final position = widget.stateManager.currentCellPosition;
+      if (position != null && 
+          position.hasPosition && 
+          position.rowIdx == widget.stateManager.refRows.length - 1 &&
+          widget.stateManager.configuration.enterKeyAction.isEditingAndMoveDown &&
+          !HardwareKeyboard.instance.isShiftPressed) {
+        // At last row, exit editing mode
+        widget.stateManager.setEditing(false);
+        return KeyEventResult.handled;
+      }
+      
       return KeyEventResult.ignored;
+    }
+
+    // Tab-Taste behandeln
+    if (keyManager.isTab) {
+      _handleOnComplete();
+      
+      // Check if we're at the last column and exit editing mode  
+      final position = widget.stateManager.currentCellPosition;
+      if (position != null && 
+          position.hasPosition && 
+          position.columnIdx == widget.stateManager.refColumns.length - 1 &&
+          !HardwareKeyboard.instance.isShiftPressed) {
+        // At last column, exit editing mode
+        widget.stateManager.setEditing(false);
+        return KeyEventResult.handled;
+      }
     }
 
     // ESC 는 편집된 문자열을 원래 문자열로 돌이킨다.
@@ -229,6 +273,16 @@ mixin TextCellState<T extends TextCell> on State<T> implements TextFieldProps {
   Widget build(BuildContext context) {
     if (widget.stateManager.keepFocus) {
       cellFocus.requestFocus();
+      
+      // Ensure cursor is positioned at the end when focus is requested
+      // This prevents automatic text selection that would cause overwrites
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_textController.text.isNotEmpty && mounted) {
+          _textController.selection = TextSelection.fromPosition(
+            TextPosition(offset: _textController.text.length),
+          );
+        }
+      });
     }
 
     return TextField(

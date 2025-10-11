@@ -88,23 +88,58 @@ class PlutoGridKeyManager {
   }
 
   void _handleDefaultActions(PlutoKeyManagerEvent keyEvent) {
-    if (!keyEvent.isModifierPressed && keyEvent.isCharacter) {
+    // Check for character input (including numpad digits)
+    if (!keyEvent.isModifierPressed && _isInputCharacter(keyEvent)) {
       _handleCharacter(keyEvent);
       return;
     }
+  }
+
+  bool _isInputCharacter(PlutoKeyManagerEvent keyEvent) {
+    // Check if it's a regular character with a character value
+    if (keyEvent.isCharacter && keyEvent.event.character != null) {
+      return true;
+    }
+    
+    // Check if it's a numpad digit (even if character is null)
+    if (keyEvent.isNumpadDigit) {
+      return true;
+    }
+    
+    return false;
   }
 
   void _handleCharacter(PlutoKeyManagerEvent keyEvent) {
     if (stateManager.isEditing != true && stateManager.currentCell != null) {
       stateManager.setEditing(true);
 
-      if (keyEvent.event.character == null) {
+      // Get character from event or from numpad mapping
+      String? character = keyEvent.event.character;
+      if (character == null && keyEvent.isNumpadDigit) {
+        character = keyEvent.getNumpadDigitCharacter();
+      }
+
+      if (character == null) {
         return;
       }
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (stateManager.textEditingController != null) {
-          stateManager.textEditingController!.text = keyEvent.event.character!;
+        if (stateManager.textEditingController != null && character != null) {
+          stateManager.textEditingController!.text = character;
+          // Position cursor at the end to prevent text selection overwrites
+          stateManager.textEditingController!.selection = TextSelection.fromPosition(
+            TextPosition(offset: character.length),
+          );
+          
+          // Set cursor position again in the next frame to ensure it overrides
+          // any automatic text selection that might happen after this
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (stateManager.textEditingController != null) {
+              stateManager.textEditingController!.selection = TextSelection.fromPosition(
+                TextPosition(offset: stateManager.textEditingController!.text.length),
+              );
+            }
+          });
         }
       });
     }

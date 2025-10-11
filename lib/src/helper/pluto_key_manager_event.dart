@@ -78,6 +78,50 @@ class PlutoKeyManagerEvent {
 
   bool get isCharacter => _characters.contains(event.logicalKey.keyId);
 
+  bool get isNumpadDigit => _isNumpadDigitKey(event.logicalKey);
+
+  String? getNumpadDigitCharacter() {
+    return _getNumpadCharacterForKey(event.logicalKey);
+  }
+
+  // Platform-independent numpad digit detection
+  bool _isNumpadDigitKey(LogicalKeyboardKey key) {
+    return key == LogicalKeyboardKey.numpad0 ||
+           key == LogicalKeyboardKey.numpad1 ||
+           key == LogicalKeyboardKey.numpad2 ||
+           key == LogicalKeyboardKey.numpad3 ||
+           key == LogicalKeyboardKey.numpad4 ||
+           key == LogicalKeyboardKey.numpad5 ||
+           key == LogicalKeyboardKey.numpad6 ||
+           key == LogicalKeyboardKey.numpad7 ||
+           key == LogicalKeyboardKey.numpad8 ||
+           key == LogicalKeyboardKey.numpad9 ||
+           key == LogicalKeyboardKey.numpadDecimal ||
+           key == LogicalKeyboardKey.numpadAdd ||
+           key == LogicalKeyboardKey.numpadSubtract ||
+           key == LogicalKeyboardKey.numpadMultiply ||
+           key == LogicalKeyboardKey.numpadDivide;
+  }
+
+  String? _getNumpadCharacterForKey(LogicalKeyboardKey key) {
+    if (key == LogicalKeyboardKey.numpad0) return '0';
+    if (key == LogicalKeyboardKey.numpad1) return '1';
+    if (key == LogicalKeyboardKey.numpad2) return '2';
+    if (key == LogicalKeyboardKey.numpad3) return '3';
+    if (key == LogicalKeyboardKey.numpad4) return '4';
+    if (key == LogicalKeyboardKey.numpad5) return '5';
+    if (key == LogicalKeyboardKey.numpad6) return '6';
+    if (key == LogicalKeyboardKey.numpad7) return '7';
+    if (key == LogicalKeyboardKey.numpad8) return '8';
+    if (key == LogicalKeyboardKey.numpad9) return '9';
+    if (key == LogicalKeyboardKey.numpadDecimal) return '.';
+    if (key == LogicalKeyboardKey.numpadAdd) return '+';
+    if (key == LogicalKeyboardKey.numpadSubtract) return '-';
+    if (key == LogicalKeyboardKey.numpadMultiply) return '*';
+    if (key == LogicalKeyboardKey.numpadDivide) return '/';
+    return null;
+  }
+
   bool get isCtrlC {
     return isCtrlPressed &&
         event.logicalKey.keyId == LogicalKeyboardKey.keyC.keyId;
