@@ -56,7 +56,22 @@ mixin TextCellState<T extends TextCell> on State<T> implements TextFieldProps {
 
     widget.stateManager.setTextEditingController(_textController);
 
-    _textController.text = formattedValue;
+    // Check if text editing controller already has text set by key manager
+    // This prevents overwriting the first character typed
+    if (_textController.text.isEmpty) {
+      _textController.text = formattedValue;
+    } else {
+      // If text was set by key manager, position cursor at the end
+      // This must be done in a post frame callback to ensure it happens after
+      // any automatic text selection that TextField might apply
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_textController.text.isNotEmpty) {
+          _textController.selection = TextSelection.fromPosition(
+            TextPosition(offset: _textController.text.length),
+          );
+        }
+      });
+    }
 
     _initialCellValue = _textController.text;
 
@@ -229,6 +244,16 @@ mixin TextCellState<T extends TextCell> on State<T> implements TextFieldProps {
   Widget build(BuildContext context) {
     if (widget.stateManager.keepFocus) {
       cellFocus.requestFocus();
+      
+      // Ensure cursor is positioned at the end when focus is requested
+      // This prevents automatic text selection that would cause overwrites
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_textController.text.isNotEmpty && mounted) {
+          _textController.selection = TextSelection.fromPosition(
+            TextPosition(offset: _textController.text.length),
+          );
+        }
+      });
     }
 
     return TextField(

@@ -105,6 +105,20 @@ class PlutoGridKeyManager {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (stateManager.textEditingController != null) {
           stateManager.textEditingController!.text = keyEvent.event.character!;
+          // Position cursor at the end to prevent text selection overwrites
+          stateManager.textEditingController!.selection = TextSelection.fromPosition(
+            TextPosition(offset: keyEvent.event.character!.length),
+          );
+          
+          // Set cursor position again in the next frame to ensure it overrides
+          // any automatic text selection that might happen after this
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (stateManager.textEditingController != null) {
+              stateManager.textEditingController!.selection = TextSelection.fromPosition(
+                TextPosition(offset: stateManager.textEditingController!.text.length),
+              );
+            }
+          });
         }
       });
     }
