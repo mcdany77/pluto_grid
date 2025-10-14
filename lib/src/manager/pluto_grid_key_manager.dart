@@ -89,10 +89,27 @@ class PlutoGridKeyManager {
 
   void _handleDefaultActions(PlutoKeyManagerEvent keyEvent) {
     // Check for character input (including numpad digits)
-    if (!keyEvent.isModifierPressed && _isInputCharacter(keyEvent)) {
+    // Allow Shift key for uppercase letters, but block other modifiers
+    if (_isInputCharacter(keyEvent) && 
+        (!keyEvent.isModifierPressed || _isShiftOnlyForLetter(keyEvent))) {
       _handleCharacter(keyEvent);
       return;
     }
+  }
+
+  bool _isShiftOnlyForLetter(PlutoKeyManagerEvent keyEvent) {
+    // Allow Shift key only if it's used for typing letters (not Ctrl+Shift, Alt+Shift, etc.)
+    return keyEvent.isShiftPressed && 
+           !keyEvent.isCtrlPressed && 
+           !keyEvent.isAltPressed &&
+           _isLetter(keyEvent);
+  }
+
+  bool _isLetter(PlutoKeyManagerEvent keyEvent) {
+    // Check if the key is a letter (A-Z)
+    final keyId = keyEvent.event.logicalKey.keyId;
+    return (keyId >= 0x0000000041 && keyId <= 0x000000005a) || // A-Z
+           (keyId >= 0x0000000061 && keyId <= 0x000000007a);   // a-z
   }
 
   bool _isInputCharacter(PlutoKeyManagerEvent keyEvent) {
