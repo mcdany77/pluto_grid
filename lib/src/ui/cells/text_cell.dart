@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -40,8 +39,6 @@ mixin TextCellState<T extends TextCell> on State<T> implements TextFieldProps {
 
   late _CellEditingStatus _cellEditingStatus;
 
-  Timer? _cursorPositionTimer;
-
   @override
   TextInputType get keyboardType => TextInputType.text;
 
@@ -52,32 +49,11 @@ mixin TextCellState<T extends TextCell> on State<T> implements TextFieldProps {
       widget.column.formattedValueForDisplayInEditing(widget.cell.value);
 
   void _positionCursorAtEnd() {
-    _cursorPositionTimer?.cancel();
-    
     if (_textController.text.isEmpty) return;
-    
-    // Set cursor position immediately
+
     _textController.selection = TextSelection.fromPosition(
       TextPosition(offset: _textController.text.length),
     );
-    
-    // Set cursor position again after a short delay to override any automatic selection
-    _cursorPositionTimer = Timer(const Duration(milliseconds: 10), () {
-      if (mounted && _textController.text.isNotEmpty) {
-        _textController.selection = TextSelection.fromPosition(
-          TextPosition(offset: _textController.text.length),
-        );
-      }
-    });
-    
-    // And one more time to be absolutely sure
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _textController.text.isNotEmpty) {
-        _textController.selection = TextSelection.fromPosition(
-          TextPosition(offset: _textController.text.length),
-        );
-      }
-    });
   }
 
   @override
@@ -92,12 +68,11 @@ mixin TextCellState<T extends TextCell> on State<T> implements TextFieldProps {
     // This prevents overwriting the first character typed
     if (_textController.text.isEmpty) {
       _textController.text = formattedValue;
-      
-      // Always position cursor at the end, even for normal editing activation
-      // This prevents automatic text selection when entering edit mode
+
+      // Start editing with the cursor at the end of the cell value.
       _positionCursorAtEnd();
     } else {
-      // If text was set by key manager, position cursor at the end
+      // If text was set by key manager, position the cursor after that text.
       _positionCursorAtEnd();
     }
 
@@ -124,8 +99,6 @@ mixin TextCellState<T extends TextCell> on State<T> implements TextFieldProps {
         widget.stateManager.currentColumn?.enableEditingMode != true) {
       widget.stateManager.setTextEditingController(null);
     }
-
-    _cursorPositionTimer?.cancel();
 
     _debounce.dispose();
 
@@ -251,7 +224,7 @@ mixin TextCellState<T extends TextCell> on State<T> implements TextFieldProps {
     // 엔터키는 그리드 포커스 핸들러로 전파 한다.
     if (keyManager.isEnter) {
       _handleOnComplete();
-      
+
       // Check if we're at the last row and exit editing mode
       final position = widget.stateManager.currentCellPosition;
       if (position != null && 
@@ -263,14 +236,14 @@ mixin TextCellState<T extends TextCell> on State<T> implements TextFieldProps {
         widget.stateManager.setEditing(false);
         return KeyEventResult.handled;
       }
-      
+
       return KeyEventResult.ignored;
     }
 
     // Tab-Taste behandeln
     if (keyManager.isTab) {
       _handleOnComplete();
-      
+
       // Check if we're at the last column and exit editing mode  
       final position = widget.stateManager.currentCellPosition;
       if (position != null && 
@@ -297,19 +270,12 @@ mixin TextCellState<T extends TextCell> on State<T> implements TextFieldProps {
 
   void _handleOnTap() {
     widget.stateManager.setKeepFocus(true);
-    
-    // Position cursor at the end when tapping the cell
-    _positionCursorAtEnd();
   }
 
   @override
   Widget build(BuildContext context) {
     if (widget.stateManager.keepFocus) {
       cellFocus.requestFocus();
-      
-      // Ensure cursor is positioned at the end when focus is requested
-      // This prevents automatic text selection that would cause overwrites
-      _positionCursorAtEnd();
     }
 
     return TextField(

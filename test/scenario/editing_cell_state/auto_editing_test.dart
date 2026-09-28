@@ -55,6 +55,29 @@ void main() {
     );
 
     plutoGrid.test(
+      '편집 중인 셀 안을 마우스로 탭하면 커서가 탭한 위치로 이동해야 한다.',
+      (tester) async {
+        const value = 'header0 value 0';
+
+        await tester.tap(find.text(value));
+        await tester.pumpAndSettle();
+
+        final textField = find.byType(TextField);
+        final fieldRect = tester.getRect(textField);
+
+        await tester.tapAt(
+          Offset(fieldRect.left + fieldRect.width * 0.3, fieldRect.center.dy),
+        );
+        await tester.pumpAndSettle();
+
+        final selection = stateManager!.textEditingController!.selection;
+        expect(selection.isCollapsed, true);
+        expect(selection.extentOffset, greaterThan(0));
+        expect(selection.extentOffset, lessThan(value.length));
+      },
+    );
+
+    plutoGrid.test(
       '첫번째 셀을 탭하고 탭키를 입력하면 두번째 셀이 editing 상태가 되어야 한다.',
       (tester) async {
         expect(stateManager!.isEditing, false);
