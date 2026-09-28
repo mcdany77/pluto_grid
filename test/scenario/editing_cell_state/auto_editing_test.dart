@@ -62,6 +62,11 @@ void main() {
         await tester.tap(find.text(value));
         await tester.pumpAndSettle();
 
+        final activatedSelection =
+            stateManager!.textEditingController!.selection;
+        expect(activatedSelection.isCollapsed, true);
+        expect(activatedSelection.extentOffset, value.length);
+
         final textField = find.byType(TextField);
         final fieldRect = tester.getRect(textField);
 

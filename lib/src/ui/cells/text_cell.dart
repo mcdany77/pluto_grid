@@ -39,6 +39,8 @@ mixin TextCellState<T extends TextCell> on State<T> implements TextFieldProps {
 
   late _CellEditingStatus _cellEditingStatus;
 
+  bool _hasPositionedCursorOnInitialFocus = false;
+
   @override
   TextInputType get keyboardType => TextInputType.text;
 
@@ -61,6 +63,7 @@ mixin TextCellState<T extends TextCell> on State<T> implements TextFieldProps {
     super.initState();
 
     cellFocus = FocusNode(onKeyEvent: _handleOnKey);
+    cellFocus.addListener(_handleFocusChange);
 
     widget.stateManager.setTextEditingController(_textController);
 
@@ -227,10 +230,11 @@ mixin TextCellState<T extends TextCell> on State<T> implements TextFieldProps {
 
       // Check if we're at the last row and exit editing mode
       final position = widget.stateManager.currentCellPosition;
-      if (position != null && 
-          position.hasPosition && 
+      if (position != null &&
+          position.hasPosition &&
           position.rowIdx == widget.stateManager.refRows.length - 1 &&
-          widget.stateManager.configuration.enterKeyAction.isEditingAndMoveDown &&
+          widget
+              .stateManager.configuration.enterKeyAction.isEditingAndMoveDown &&
           !HardwareKeyboard.instance.isShiftPressed) {
         // At last row, exit editing mode
         widget.stateManager.setEditing(false);
@@ -244,10 +248,10 @@ mixin TextCellState<T extends TextCell> on State<T> implements TextFieldProps {
     if (keyManager.isTab) {
       _handleOnComplete();
 
-      // Check if we're at the last column and exit editing mode  
+      // Check if we're at the last column and exit editing mode
       final position = widget.stateManager.currentCellPosition;
-      if (position != null && 
-          position.hasPosition && 
+      if (position != null &&
+          position.hasPosition &&
           position.columnIdx == widget.stateManager.refColumns.length - 1 &&
           !HardwareKeyboard.instance.isShiftPressed) {
         // At last column, exit editing mode
@@ -270,6 +274,22 @@ mixin TextCellState<T extends TextCell> on State<T> implements TextFieldProps {
 
   void _handleOnTap() {
     widget.stateManager.setKeepFocus(true);
+  }
+
+  void _handleFocusChange() {
+    // Focus is requested when the cell becomes active. Position the cursor at
+    // the end once, but leave subsequent mouse-selected positions untouched.
+    if (cellFocus.hasFocus && !_hasPositionedCursorOnInitialFocus) {
+      _hasPositionedCursorOnInitialFocus = true;
+      _positionCursorAtEnd();
+
+      // EditableText may apply its initial selection later in this frame.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _positionCursorAtEnd();
+        }
+      });
+    }
   }
 
   @override
